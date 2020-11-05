@@ -1,4 +1,7 @@
 */data/
+*.tar
+*.h5
+*.csv
 
 # Byte-compiled / optimized / DLL files
 
