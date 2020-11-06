@@ -6,7 +6,7 @@
 #SBATCH --error=/home/ruolinzheng/slurm/slurm_out/%j.%N.stderr
 #SBATCH --workdir=/scratch/ruolinzheng/cmsc33750/hw4
 #SBATCH --partition=quadro
-#SBATCH --job-name=cmsc33750-p1
+#SBATCH --job-name=cmsc33750-p4
 #SBATCH --gres=gpu:1
 #SBATCH --time=08:00:00
 #SBATCH --mem=24000
@@ -17,4 +17,4 @@ source ~/.bashrc
 
 source activate py38
 
-python p1_retrain_tc.py
+python train.py p4

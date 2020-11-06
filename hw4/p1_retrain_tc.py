@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-print('started')
-
-# In[9]:
-
-
-# %load p1_retrain_tc.py
 import numpy as np
 
 from keras.layers import Input, Dense, Dropout, Activation, Conv1D, MaxPooling1D, Flatten
@@ -15,7 +9,7 @@ from keras.models import Sequential, Model, model_from_json, model_from_yaml
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint, CSVLogger, ReduceLROnPlateau
 
-from sklearn.metrics import accuracy_score
+print('Start training p1_tc.model.h5')
 
 EPOCH = 400
 BATCH = 20
