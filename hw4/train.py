@@ -64,7 +64,6 @@ def load_data_tc_labels(): # for p4
     return X_train, Y_train, X_test, Y_test
 
 def load_data_tumor_only(): # for p1
-
     nt_train = np.load('data/nt_train.npy')
     nt_train_tc_labels = np.load('data/nt_train_tc_labels.npy')
 
@@ -99,8 +98,48 @@ def load_data_tumor_only(): # for p1
 
     return X_train, Y_train, X_test, Y_test
 
-def load_data_concat_normal():
-    pass
+def load_data_concat_normal(): # for p2
+    nt_train = np.load('data/nt_train.npy')
+
+    tc_train = np.load('data/tc_train.npy')
+    tc_train_labels = np.load('data/tc_train_labels.npy')
+
+    nt_test = np.load('data/nt_test.npy')
+
+    tc_test = np.load('data/tc_test.npy')
+    tc_test_labels = np.load('data/tc_test_labels.npy')
+
+    # pull out normal data
+    nt_train_labels = np.load('data/nt_train_labels.npy')
+    nt_test_labels = np.load('data/nt_test_labels.npy')
+
+    train_normal_indices = (nt_train_labels[:, 1] == 0)
+    test_normal_indices = (nt_test_labels[:, 1] == 0)
+
+    nt_train = nt_train[train_normal_indices]
+    nt_test = nt_test[test_normal_indices]
+
+    normal_class_num = tc_test_labels.shape[1]
+    nt_train_tc_labels = np.full((nt_train.shape[0], 1), normal_class_num)
+    nt_test_tc_labels = np.full((nt_test.shape[0], 1), normal_class_num)
+
+    # re-categorize
+    num_classes = normal_class_num + 1
+    tc_train_labels = np_utils.to_categorical(
+        np.argmax(tc_train_labels, axis=1), num_classes)
+    tc_test_labels = np_utils.to_categorical(
+        np.argmax(tc_test_labels, axis=1), num_classes)
+    nt_train_tc_labels = np_utils.to_categorical(nt_train_tc_labels, num_classes)
+    nt_test_tc_labels = np_utils.to_categorical(nt_test_tc_labels, num_classes)
+
+    # concat data
+    X_train = np.concatenate((nt_train, tc_train, nt_test), axis=0)
+    Y_train = np.concatenate((nt_train_tc_labels, tc_train_labels, nt_test_tc_labels), axis=0)
+
+    X_test = tc_test
+    Y_test = tc_test_labels
+
+    return X_train, Y_train, X_test, Y_test
 
 def construct_model(num_features, num_classes, weights=None):
     model = Sequential()

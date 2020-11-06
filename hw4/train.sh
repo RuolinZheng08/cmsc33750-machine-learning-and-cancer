@@ -5,10 +5,10 @@
 #SBATCH --output=/home/ruolinzheng/slurm/slurm_out/%j.%N.stdout
 #SBATCH --error=/home/ruolinzheng/slurm/slurm_out/%j.%N.stderr
 #SBATCH --workdir=/scratch/ruolinzheng/cmsc33750/hw4
-#SBATCH --partition=quadro
+#SBATCH --partition=titan
 #SBATCH --job-name=cmsc33750-${foo}
 #SBATCH --gres=gpu:1
-#SBATCH --time=08:00:00
+#SBATCH --time=04:00:00
 #SBATCH --mem=24000
 
 pwd; hostname; date
