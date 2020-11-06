@@ -16,6 +16,7 @@ def main():
         exit(1)
 
     model_name = sys.argv[1]
+    print('model_name:', model_name)
 
     # load data differently depending on the part of the HW
     print('Load data')
