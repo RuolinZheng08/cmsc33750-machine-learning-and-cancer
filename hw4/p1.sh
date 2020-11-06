@@ -15,8 +15,8 @@
 
 pwd; hostname; date
 
-conda init bash
+source ~/.bashrc
 
-conda activate py38
+source activate py38
 
 python p1-retrain-tc-dev.py

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+print('started')
+
 # In[9]:
 
 
@@ -63,9 +65,15 @@ print(nt_train.shape, nt_test.shape)
 # pull out tumor data from NT
 nt_train_labels = np.load(DATA_DIR + NT_TRAIN_LABELS)
 nt_test_labels = np.load(DATA_DIR + NT_TEST_LABELS)
-nt_train = nt_train[nt_train_labels[:, 1] == 1]
-nt_test = nt_test[nt_test_labels[:, 1] == 1]
 
+train_tumor_indices = (nt_train_labels[:, 1] == 1)
+test_tumor_indices = (nt_test_labels[:, 1] == 1)
+
+nt_train = nt_train[train_tumor_indices]
+nt_test = nt_test[test_tumor_indices]
+
+nt_train_tc_labels = nt_train_tc_labels[train_tumor_indices]
+nt_test_tc_labels = nt_test_tc_labels[test_tumor_indices]
 
 # In[11]:
 
