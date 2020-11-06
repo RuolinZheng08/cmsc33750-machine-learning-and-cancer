@@ -56,8 +56,8 @@ nt_test = np.load(DATA_DIR + NT_TEST)
 # nt_train_labels = np.load(DATA_DIR + NT_TRAIN_LABELS)
 # nt_test_labels = np.load(DATA_DIR + NT_TEST_LABELS)
 
-nt_train_tc_labels = model.predict(nt_train)
-nt_test_tc_labels = model.predict(nt_test)
+nt_train_tc_probs = model.predict(nt_train)
+nt_test_tc_probs = model.predict(nt_test)
 
 np.save(DATA_DIR + 'nt_train_tc_labels', nt_train_tc_labels)
 np.save(DATA_DIR + 'nt_test_tc_labels', nt_test_tc_labels)
