@@ -11,6 +11,9 @@ from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint, CSVLogger, ReduceLROnPlateau
 
 def main():
+    # import tensorflow as tf
+    # print('Num GPUs Available:', len(tf.config.experimental.list_physical_devices('GPU')))
+
     if len(sys.argv) != 2:
         print('train.py [p1|p2|p4]')
         exit(1)
