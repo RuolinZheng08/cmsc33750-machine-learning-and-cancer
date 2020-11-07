@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from keras.callbacks import ModelCheckpoint, CSVLogger
+from keras.callbacks import CSVLogger
 
 class Sampling(layers.Layer):
     """Uses (z_mean, z_log_var) to sample z, the vector encoding a digit."""
@@ -67,10 +67,10 @@ class VAE(keras.Model):
             "kl_loss": kl_loss,
         }
 
+
 def main():
     model_name = 'p6'
-    checkpointer = ModelCheckpoint(filepath=model_name+'.autosave.model.h5', verbose=0, save_weights_only=False, save_best_only=True)
-    csv_logger = CSVLogger(model_name+'.training.log')
+    csv_logger = CSVLogger('logs/'+model_name+'.training.log')
     nt_train = np.load('data/nt_train.npy')
     print(nt_train.shape)
     encoder = construct_encoder(latent_dim=2, num_features=nt_train.shape[1])
@@ -79,8 +79,10 @@ def main():
     decoder.summary()
     vae = VAE(encoder, decoder)
     vae.compile(optimizer=keras.optimizers.Adam())
-    vae.fit(nt_train, epochs=30, batch_size=20,
-    callbacks=[checkpointer, csv_logger])
+    vae.fit(nt_train, epochs=30, batch_size=20, callbacks=[csv_logger])
+
+    vae.save('models/'+model_name+'.model.h5')
+    print('Saved model.')
 
 if __name__ == '__main__':
     main()
