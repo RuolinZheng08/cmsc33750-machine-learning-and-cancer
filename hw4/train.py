@@ -29,7 +29,7 @@ def main():
     elif model_name == 'p2':
         X_train, Y_train, X_test, Y_test = load_data_concat_normal()
     elif model_name == 'p4':
-        X_train, Y_train, X_test, Y_test = load_data_tc_labels()
+        X_train, Y_train, X_test, Y_test = load_data_p4()
 
     print('X_train {}, Y_train {}, X_test {}, Y_test {}'.format(
         X_train.shape, Y_train.shape, X_test.shape, Y_train.shape
@@ -44,27 +44,14 @@ def main():
 
 ################################################################################
 
-def load_data_tc_labels(): # for p4
-    nt_train = np.load('data/nt_train.npy')
-    nt_train_tc_labels = np.load('data/nt_train_tc_labels.npy')
+def load_data_p4(): # for p4
+    p4_train = np.load('data/p4_train.npy')
+    p4_train_labels = np.load('data/p4_train_labels.npy')
 
-    tc_train = np.load('data/tc_train.npy')
-    tc_train_labels = np.load('data/tc_train_labels.npy')
+    p4_test = np.load('data/p4_test.npy')
+    p4_test_labels = np.load('data/p4_test_labels.npy')
 
-    nt_test = np.load('data/nt_test.npy')
-    nt_test_tc_labels = np.load('data/nt_test_tc_labels.npy')
-
-    tc_test = np.load('data/tc_test.npy')
-    tc_test_labels = np.load('data/tc_test_labels.npy')
-
-    # concat data
-    X_train = np.concatenate((nt_train, tc_train, nt_test), axis=0)
-    Y_train = np.concatenate((nt_train_tc_labels, tc_train_labels, nt_test_tc_labels), axis=0)
-
-    X_test = tc_test
-    Y_test = tc_test_labels
-
-    return X_train, Y_train, X_test, Y_test
+    return p4_train, p4_train_labels, p4_test, p4_test_labels
 
 def load_data_tumor_only(): # for p1
     nt_train = np.load('data/nt_train.npy')
