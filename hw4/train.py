@@ -15,7 +15,7 @@ def main():
     # print('Num GPUs Available:', len(tf.config.experimental.list_physical_devices('GPU')))
 
     if len(sys.argv) != 2:
-        print('train.py [p1|p2|p4]')
+        print('train.py [p1|p2|p4|p5]')
         exit(1)
 
     model_name = sys.argv[1]
@@ -30,6 +30,8 @@ def main():
         X_train, Y_train, X_test, Y_test = load_data_concat_normal()
     elif model_name == 'p4':
         X_train, Y_train, X_test, Y_test = load_data_p4()
+    elif model_name == 'p5':
+        X_train, Y_train, X_test, Y_test = load_data_p5()
 
     print('X_train {}, Y_train {}, X_test {}, Y_test {}'.format(
         X_train.shape, Y_train.shape, X_test.shape, Y_train.shape
@@ -52,6 +54,15 @@ def load_data_p4(): # for p4
     p4_test_labels = np.load('data/p4_test_labels.npy')
 
     return p4_train, p4_train_labels, p4_test, p4_test_labels
+
+def load_data_p5(): # for p5
+    p4_train = np.load('data/p4_train.npy')
+    p5_train_labels = np.load('data/p5_train_labels.npy')
+
+    p4_test = np.load('data/p4_test.npy')
+    p5_test_labels = np.load('data/p5_test_labels.npy')
+
+    return p4_train, p5_train_labels, p4_test, p5_test_labels
 
 def load_data_tumor_only(): # for p1
     nt_train = np.load('data/nt_train.npy')
@@ -169,7 +180,7 @@ def train(model, X_train, Y_train, X_test, Y_test, model_name):
 
     model.fit(X_train, Y_train,
     batch_size=20,
-    epochs=400,
+    epochs=150,
     verbose=1,
     validation_data=(X_test, Y_test),
     callbacks = [checkpointer, csv_logger, reduce_lr])

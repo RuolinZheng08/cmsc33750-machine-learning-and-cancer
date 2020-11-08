@@ -67,15 +67,13 @@ class VAE(keras.Model):
             "kl_loss": kl_loss,
         }
 
-def construct_vae(latent_dim, num_features, weights=None):
+def construct_vae(latent_dim, num_features):
     encoder = construct_encoder(latent_dim=latent_dim, num_features=num_features)
     decoder = construct_decoder(latent_dim=latent_dim, num_features=num_features)
     encoder.summary()
     decoder.summary()
     vae = VAE(encoder, decoder)
     vae.compile(optimizer=keras.optimizers.Adam())
-    if weights:
-        vae.load_weights(weights)
     return vae
 
 def main():
@@ -86,8 +84,14 @@ def main():
     vae = construct_vae(latent_dim=2, num_features=nt_train.shape[1])
     vae.fit(nt_train, epochs=30, batch_size=20, callbacks=[csv_logger])
 
-    vae.save_weights('models/' + model_name + '.model.h5')
-    print('Saved model.')
+    vae.encoder.save_weights('models/' + model_name + '.encoder.model.h5')
+    vae.decoder.save_weights('models/' + model_name + '.decoder.model.h5')
+
+    vae2 = construct_vae(latent_dim=2, num_features=nt_train.shape[1])
+    vae2.encoder.load_weights('models/' + model_name + '.encoder.model.h5')
+    vae2.decoder.load_weights('models/' + model_name + '.decoder.model.h5')
+
+    print('Save okay')
 
 if __name__ == '__main__':
     main()
