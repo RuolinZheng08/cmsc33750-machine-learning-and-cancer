@@ -67,21 +67,26 @@ class VAE(keras.Model):
             "kl_loss": kl_loss,
         }
 
+def construct_vae(latent_dim, num_features, weights=None):
+    encoder = construct_encoder(latent_dim=latent_dim, num_features=num_features)
+    decoder = construct_decoder(latent_dim=latent_dim, num_features=num_features)
+    encoder.summary()
+    decoder.summary()
+    vae = VAE(encoder, decoder)
+    vae.compile(optimizer=keras.optimizers.Adam())
+    if weights:
+        vae.load_weights(weights)
+    return vae
 
 def main():
     model_name = 'p6'
     csv_logger = CSVLogger('logs/'+model_name+'.training.log')
     nt_train = np.load('data/nt_train.npy')
     print(nt_train.shape)
-    encoder = construct_encoder(latent_dim=2, num_features=nt_train.shape[1])
-    decoder = construct_decoder(latent_dim=2, num_features=nt_train.shape[1])
-    encoder.summary()
-    decoder.summary()
-    vae = VAE(encoder, decoder)
-    vae.compile(optimizer=keras.optimizers.Adam())
+    vae = construct_vae(latent_dim=2, num_features=nt_train.shape[1])
     vae.fit(nt_train, epochs=30, batch_size=20, callbacks=[csv_logger])
 
-    vae.save('models/'+model_name+'.model.h5')
+    vae.save_weights('models/' + model_name + '.model.h5')
     print('Saved model.')
 
 if __name__ == '__main__':

@@ -123,11 +123,11 @@ def load_data_concat_normal(): # for p2
     nt_test_tc_labels = np_utils.to_categorical(nt_test_tc_labels, num_classes)
 
     # concat data
-    X_train = np.concatenate((nt_train, tc_train, nt_test), axis=0)
-    Y_train = np.concatenate((nt_train_tc_labels, tc_train_labels, nt_test_tc_labels), axis=0)
+    X_train = np.concatenate((nt_train, tc_train), axis=0)
+    Y_train = np.concatenate((nt_train_tc_labels, tc_train_labels), axis=0)
 
-    X_test = tc_test
-    Y_test = tc_test_labels
+    X_test = np.concatenate((nt_test, tc_test), axis=0)
+    Y_test = np.concatenate((nt_test_tc_labels, tc_test_labels), axis=0)
 
     return X_train, Y_train, X_test, Y_test
 
