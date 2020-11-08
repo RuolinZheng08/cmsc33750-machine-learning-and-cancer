@@ -101,30 +101,43 @@ def load_data_tumor_only(): # for p1
 
 def load_data_concat_normal(): # for p2
     nt_train = np.load('data/nt_train.npy')
+    nt_train_tc_labels = np.load('data/nt_train_tc_labels.npy')
 
     tc_train = np.load('data/tc_train.npy')
     tc_train_labels = np.load('data/tc_train_labels.npy')
 
     nt_test = np.load('data/nt_test.npy')
+    nt_test_tc_labels = np.load('data/nt_test_tc_labels.npy')
+
 
     tc_test = np.load('data/tc_test.npy')
     tc_test_labels = np.load('data/tc_test_labels.npy')
 
-    # pull out normal data
+    # pull out tumor and normal data
     nt_train_labels = np.load('data/nt_train_labels.npy')
     nt_test_labels = np.load('data/nt_test_labels.npy')
 
     train_normal_indices = (nt_train_labels[:, 1] == 0)
     test_normal_indices = (nt_test_labels[:, 1] == 0)
+    nt_train_normal = nt_train[train_normal_indices]
+    nt_test_normal = nt_test[test_normal_indices]
 
-    nt_train = nt_train[train_normal_indices]
-    nt_test = nt_test[test_normal_indices]
+    train_tumor_indices = (nt_train_labels[:, 1] == 1)
+    test_tumor_indices = (nt_test_labels[:, 1] == 1)
+    nt_train_tumor = nt_train[train_tumor_indices]
+    nt_test_tumor = nt_test[test_tumor_indices]
+    nt_train_tumor_labels = nt_train_tc_labels[train_tumor_indices]
+    nt_test_tumor_labels = nt_test_tc_labels[test_tumor_indices]
 
     normal_class_num = tc_test_labels.shape[1]
-    nt_train_tc_labels = np.full((nt_train.shape[0], 1), normal_class_num)
-    nt_test_tc_labels = np.full((nt_test.shape[0], 1), normal_class_num)
+    nt_train_normal_labels = np.full((nt_train.shape[0], 1), normal_class_num)
+    nt_test_normal_labels = np.full((nt_test.shape[0], 1), normal_class_num)
 
-    # re-categorize
+    # concat labels
+    nt_train_tc_labels = np.concat([nt_train_normal_labels, nt_train_tumor_labels])
+    nt_testtc_labels = np.concat([nt_test_normal_labels, nt_test_tumor_labels])
+
+    # re-categorize labels
     num_classes = normal_class_num + 1
     tc_train_labels = np_utils.to_categorical(
         np.argmax(tc_train_labels, axis=1), num_classes)
@@ -134,10 +147,10 @@ def load_data_concat_normal(): # for p2
     nt_test_tc_labels = np_utils.to_categorical(nt_test_tc_labels, num_classes)
 
     # concat data
-    X_train = np.concatenate((nt_train, tc_train), axis=0)
+    X_train = np.concatenate((nt_train_normal, nt_train_tumor, tc_train), axis=0)
     Y_train = np.concatenate((nt_train_tc_labels, tc_train_labels), axis=0)
 
-    X_test = np.concatenate((nt_test, tc_test), axis=0)
+    X_test = np.concatenate((nt_test_normal, nt_test_tumor, tc_test), axis=0)
     Y_test = np.concatenate((nt_test_tc_labels, tc_test_labels), axis=0)
 
     return X_train, Y_train, X_test, Y_test
@@ -180,7 +193,7 @@ def train(model, X_train, Y_train, X_test, Y_test, model_name):
 
     model.fit(X_train, Y_train,
     batch_size=20,
-    epochs=150,
+    epochs=20,
     verbose=1,
     validation_data=(X_test, Y_test),
     callbacks = [checkpointer, csv_logger, reduce_lr])
