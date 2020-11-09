@@ -126,16 +126,16 @@ def load_data_concat_normal(): # for p2
     test_tumor_indices = (nt_test_labels[:, 1] == 1)
     nt_train_tumor = nt_train[train_tumor_indices]
     nt_test_tumor = nt_test[test_tumor_indices]
-    nt_train_tumor_labels = nt_train_tc_labels[train_tumor_indices]
-    nt_test_tumor_labels = nt_test_tc_labels[test_tumor_indices]
+    nt_train_tumor_labels = np.argmax(nt_train_tc_labels[train_tumor_indices], axis=1)
+    nt_test_tumor_labels = np.argmax(nt_test_tc_labels[test_tumor_indices], axis=1)
 
     normal_class_num = tc_test_labels.shape[1]
-    nt_train_normal_labels = np.full((nt_train.shape[0], 1), normal_class_num)
-    nt_test_normal_labels = np.full((nt_test.shape[0], 1), normal_class_num)
+    nt_train_normal_labels = np.full(nt_train_normal.shape[0], normal_class_num)
+    nt_test_normal_labels = np.full(nt_test_normal.shape[0], normal_class_num)
 
     # concat labels
-    nt_train_tc_labels = np.concat([nt_train_normal_labels, nt_train_tumor_labels])
-    nt_testtc_labels = np.concat([nt_test_normal_labels, nt_test_tumor_labels])
+    nt_train_tc_labels = np.concatenate([nt_train_normal_labels, nt_train_tumor_labels])
+    nt_test_tc_labels = np.concatenate([nt_test_normal_labels, nt_test_tumor_labels])
 
     # re-categorize labels
     num_classes = normal_class_num + 1
