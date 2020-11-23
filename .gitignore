@@ -1,7 +1,11 @@
-*/data/
+*/*data/
 *.tar
 *.h5
 *.csv
+*.pkl
+*.zip
+*.txt
+*.trans
 
 # Byte-compiled / optimized / DLL files
 
@@ -51,7 +55,7 @@ coverage.xml
 *.pot
 
 # Django stuff:
-*.log
+# *.log
 
 # Sphinx documentation
 docs/_build/
