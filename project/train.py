@@ -30,7 +30,7 @@ def main():
         train, dev = random_split(dataset, [len(dataset) - DEV_SIZE, DEV_SIZE],
         generator=torch.Generator().manual_seed(0))
         train_loader = DataLoader(dataset=train, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
-        dev_loader = DataLoader(dataset=dev, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+        dev_loader = DataLoader(dataset=dev, batch_size=len(dev), shuffle=False)
 
         model = create_classifier(N_IN_CHANNELS)
         criterion = nn.BCELoss()
@@ -39,7 +39,7 @@ def main():
         best_auc = 0
         for epoch in tqdm(range(N_EPOCHS)):
             dev_auc = train_classifier(epoch, model, opt, criterion, train_loader, dev_loader, writer)
-            tqdm.set_description('Dev AUC {:f}'.format(dev_auc))
+            # tqdm.set_description('Dev AUC {:f}'.format(dev_auc))
             if dev_auc > best_auc: # save best model
                 torch.save({
                     'epoch': epoch,
@@ -51,13 +51,13 @@ def main():
 
     else:
         if EXPERIMENT == 'cvae':
-            cvae = ConditionalConvVAE(N_LATENT, N_IN_CHANNELS, N_CLASSES).cuda()
-            opt = torch.optim.Adam(vae.parameters(), lr=5e-4)
+            model = ConditionalConvVAE(N_LATENT, N_IN_CHANNELS, N_CLASSES).cuda()
+            opt = torch.optim.Adam(model.parameters(), lr=5e-4)
 
             best_loss = 0
             for epoch in tqdm(range(N_EPOCHS)):
                 curr_loss = train_cvae(epoch, model, opt, dataloader, writer)
-                tqdm.set_description('Loss {:f}'.format(curr_loss))
+                # tqdm.set_description('Loss {:f}'.format(curr_loss))
                 if curr_loss < best_loss:
                     torch.save({
                             'epoch': epoch,
@@ -68,16 +68,16 @@ def main():
                     best_loss = curr_loss
 
         elif EXPERIMENT == 'cgan':
-            generator = ConditionalConvGenerator(100, N_IN_CHANNELS, N_CLASSES, IMG_SIZE).cuda()
+            generator = ConditionalConvGenerator(N_LATENT, N_IN_CHANNELS, N_CLASSES, IMG_SIZE).cuda()
             gopt = torch.optim.Adam(generator.parameters(), lr=5e-4, betas=(0.5, 0.999))
-            discriminator = ConditionalConvDiscriminator(100, N_IN_CHANNELS, N_CLASSES, IMG_SIZE).cuda()
+            discriminator = ConditionalConvDiscriminator(N_LATENT, N_IN_CHANNELS, N_CLASSES, IMG_SIZE).cuda()
             dopt = torch.optim.Adam(discriminator.parameters(), lr=5e-4, betas=(0.5, 0.999))
             criterion = torch.nn.BCEWithLogitsLoss()
 
             best_loss = 0
             for epoch in tqdm(range(N_EPOCHS)):
                 curr_loss = train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, dataloader, writer)
-                tqdm.set_description('Generator loss {:f}'.format(curr_loss))
+                # tqdm.set_description('Generator loss {:f}'.format(curr_loss))
                 if curr_loss < best_loss:
                     torch.save({
                             'epoch': epoch,
@@ -91,6 +91,8 @@ def main():
 
         else:
             print('Invalid model name')
+
+    writer.close()
 
 if __name__ == '__main__':
     main()

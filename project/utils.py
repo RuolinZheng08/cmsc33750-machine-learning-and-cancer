@@ -13,6 +13,7 @@ from sklearn.metrics import roc_auc_score, confusion_matrix
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
@@ -261,12 +262,8 @@ def train_classifier(epoch, model, opt, criterion, train_loader, dev_loader, wri
 
         epoch_loss += loss.item()
 
-        break
-
     # end of epoch, eval on dev and record stats
     model.eval()
-    dev_loss = 0
-    dev_preds = []
     with torch.no_grad():
         # a single batch
         for data, labels in dev_loader:
@@ -274,11 +271,10 @@ def train_classifier(epoch, model, opt, criterion, train_loader, dev_loader, wri
             y = labels.cuda()
             preds = model(x).squeeze()
             loss = criterion(preds, y.float())
-            dev_loss += loss.item()
-            dev_preds.append(preds.cpu())
-    dev_auc = roc_auc_score(labels, np.concatenate(dev_preds))
+
+    dev_auc = roc_auc_score(labels, preds.cpu())
     writer.add_scalars('loss',
-                       {'train': epoch_loss, 'dev': dev_loss},
+                       {'train': epoch_loss, 'dev': loss.item()},
                        epoch)
     writer.add_scalar('AUC/dev', dev_auc, epoch)
     # save model
@@ -287,7 +283,7 @@ def train_classifier(epoch, model, opt, criterion, train_loader, dev_loader, wri
             'model_state_dict': model.state_dict(),
             'opt_state_dict': opt.state_dict()
             },
-        os.path.join(OUTDIR, EXPERIMENT, 'model_{}.pth'.format(epoch)))
+        os.path.join(writer.log_dir, 'model_{}.pth'.format(epoch)))
     return dev_auc # save model with best dev auc
 
 def train_cvae(epoch, model, opt, loader, writer):
@@ -301,7 +297,7 @@ def train_cvae(epoch, model, opt, loader, writer):
         y = F.one_hot(y, N_CLASSES).cuda()
 
         mu, logvar, out = model(x, y)
-        recons_loss, kld_loss, loss = vae_loss(x, out, mu, logvar, beta)
+        recons_loss, kld_loss, loss = vae_loss(x, out, mu, logvar)
 
         opt.zero_grad()
         loss.backward()
@@ -315,7 +311,7 @@ def train_cvae(epoch, model, opt, loader, writer):
 
             if i == 0: # first batch, generate fakes
                 model.eval()
-                data = vae.generate(LABELS_ONEHOT.shape[0], LABELS_ONEHOT)
+                data = model.generate(LABELS_ONEHOT.shape[0], LABELS_ONEHOT)
                 grid_img = torchvision.utils.make_grid(data, nrow=N_ROW_IMG, normalize=True)
                 writer.add_image('generated image', grid_img, epoch)
 
@@ -328,7 +324,7 @@ def train_cvae(epoch, model, opt, loader, writer):
             'model_state_dict': model.state_dict(),
             'opt_state_dict': opt.state_dict()
             },
-        os.path.join(OUTDIR, EXPERIMENT, 'model_{}.pth'.format(epoch)))
+        os.path.join(writer.log_dir, 'model_{}.pth'.format(epoch)))
     return epoch_kld_loss
 
 def train_cgan(epoch, generator, discriminator, gopt, dopt, critierion, loader, writer):
@@ -386,5 +382,5 @@ def train_cgan(epoch, generator, discriminator, gopt, dopt, critierion, loader, 
             'gopt_state_dict': gopt.state_dict(),
             'dopt_state_dict': dopt.state_dict()
             },
-        os.path.join(OUTDIR, EXPERIMENT, 'model_{}.pth'.format(epoch)))
+        os.path.join(writer.log_dir, 'model_{}.pth'.format(epoch)))
     return epoch_gloss
