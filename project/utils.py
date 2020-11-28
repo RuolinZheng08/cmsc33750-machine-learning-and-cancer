@@ -30,8 +30,8 @@ N_CLASSES = 2 # binary classification
 N_LATENT = 100
 N_EPOCHS = 100
 BATCH_SIZE = 32
-IMG_SIZE = 96
-CROP_SIZE = 64
+IMG_SIZE = 96 # raw image size
+CROP_SIZE = 64 # center crop
 N_ROW_IMG = 4 # show 4x4 grid of generated img
 
 LABELS = torch.LongTensor(range(N_CLASSES)).repeat_interleave(2 * N_ROW_IMG).cuda()
@@ -156,7 +156,7 @@ def vae_loss(x, out, mu, logvar, beta=1):
     return recons_loss, kld_loss, loss
 
 class ConditionalConvGenerator(nn.Module):
-    def __init__(self, latent_dim, n_in_channels, n_classes, img_size):
+    def __init__(self, latent_dim, n_in_channels, n_classes):
         """
         assume img has same height and width
         """
@@ -328,8 +328,7 @@ def train_cvae(epoch, model, opt, loader, writer):
         os.path.join(writer.log_dir, 'model_{}.pth'.format(epoch)))
     return epoch_kld_loss
 
-def train_cgan(epoch, generator, discriminator, gopt, dopt, critierion, loader, writer):
-    model.train()
+def train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, loader, writer):
     epoch_gloss = 0
     epoch_dloss = 0
     for i, (x, y) in enumerate(loader):
@@ -339,18 +338,10 @@ def train_cgan(epoch, generator, discriminator, gopt, dopt, critierion, loader, 
         real_y = y.cuda()
 
         fake_x = generator(batch_size, real_y).cuda()
-        fake_y = torch.LongTensor(torch.randint(0, N_CLASSES, size=(BATCH_SIZE,))).cuda()
+        fake_y = torch.LongTensor(torch.randint(0, N_CLASSES, size=(batch_size,))).cuda()
 
         disc_labels_real = torch.ones((batch_size,), dtype=torch.float).cuda()
         disc_labels_fake = torch.zeros((batch_size,), dtype=torch.float).cuda()
-
-        # Train G
-        # tell discriminator these are real data
-        preds_fake = discriminator(fake_x, real_y).squeeze().cuda()
-        gloss = criterion(preds_fake, disc_labels_real)
-        gopt.zero_grad()
-        gloss.backward()
-        gopt.step()
 
         # Train D to tell if the labeled images are fake
         # real
@@ -362,6 +353,14 @@ def train_cgan(epoch, generator, discriminator, gopt, dopt, critierion, loader, 
         dopt.zero_grad()
         dloss.backward()
         dopt.step()
+
+        # tell discriminator these are real data
+        preds_fake = discriminator(fake_x, real_y).squeeze().cuda()
+        gloss = criterion(preds_fake, disc_labels_real)
+        if epoch < 5 and i % 2: # Train G every other batch for the first 10 epochs
+            gopt.zero_grad()
+            gloss.backward()
+            gopt.step()
 
         # record batch stats
         with torch.no_grad():

@@ -37,10 +37,12 @@ def main():
 
     # confusion matrix
     cfmat = confusion_matrix(labels, np.where(preds > 0.5, 1, 0))
-    fig = sns.heatmap(cfmat, annot=True, cmap='Blues')
-    fig2 = sns.heatmap(cfmat / np.sum(cfmat), annot=True, fmt='.2%', cmap='Blues')
+    fig = plt.figure()
+    sns.heatmap(cfmat, annot=True, fmt='d', cmap='Blues')
     writer.add_figure('ConfusionMatrix/num', fig)
-    writer.add_figure('ConfusionMatrix/percent', fig2)
+    fig.clear()
+    sns.heatmap(cfmat / np.sum(cfmat), annot=True, fmt='.2%', cmap='Blues')
+    writer.add_figure('ConfusionMatrix/percent', fig)
     np.save(os.path.join(OUTDIR, EXPERIMENT, 'test_preds.npy'), preds)
 
 if __name__ == '__main__':
