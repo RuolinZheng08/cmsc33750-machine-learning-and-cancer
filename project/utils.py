@@ -55,7 +55,7 @@ class TumorDataset(Dataset):
         return len(self.annotations)
 
     def __getitem__(self, index):
-        img_name = self.annotations.id[index] + '.tif'
+        img_name = '{}.tif'.format(self.annotations.id[index])
         img_path = os.path.join(self.root_dir, img_name)
         image = Image.open(img_path)
         y_label = torch.tensor(self.annotations.label[index])

@@ -53,7 +53,7 @@ def main():
             else:
                 data = model(batch_size, labels[start : end].cuda())
             for idx, arr in zip(ids[start : end], data):
-                img = transforms.ToPILImage()(arr.cpu()).convert('RGB')
+                img = transforms.ToPILImage()(arr.cpu())
                 img.save(os.path.join(INDIR, SAVEDIR, '{}.tif'.format(idx)))
 
 if __name__ == '__main__':
