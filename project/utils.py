@@ -316,9 +316,9 @@ def train_cvae(epoch, model, opt, loader, writer):
                 writer.add_image('generated image', grid_img, epoch)
                 model.train()
 
-    writer.add_scalar('reconstruction loss', epoch_recons_loss, epoch)
-    writer.add_scalar('KL-Divergence loss', epoch_kld_loss, epoch)
-    writer.add_scalar('total loss', epoch_loss, epoch)
+    writer.add_scalar('loss/reconstruction', epoch_recons_loss, epoch)
+    writer.add_scalar('loss/KL-Divergence', epoch_kld_loss, epoch)
+    writer.add_scalar('loss/total', epoch_loss, epoch)
     # save model
     torch.save({
             'epoch': epoch,
@@ -343,6 +343,14 @@ def train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, loader, w
         disc_labels_real = torch.ones((batch_size,), dtype=torch.float).cuda()
         disc_labels_fake = torch.zeros((batch_size,), dtype=torch.float).cuda()
 
+        # Train G
+        # tell discriminator these are real data
+        preds_fake = discriminator(fake_x, real_y).squeeze().cuda()
+        gloss = criterion(preds_fake, disc_labels_real)
+        gopt.zero_grad()
+        gloss.backward()
+        gopt.step()
+
         # Train D to tell if the labeled images are fake
         # real
         preds_real = discriminator(real_x, real_y).squeeze().cuda()
@@ -353,14 +361,6 @@ def train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, loader, w
         dopt.zero_grad()
         dloss.backward()
         dopt.step()
-
-        # tell discriminator these are real data
-        preds_fake = discriminator(fake_x, real_y).squeeze().cuda()
-        gloss = criterion(preds_fake, disc_labels_real)
-        if epoch < 5 and i % 2: # Train G every other batch for the first 10 epochs
-            gopt.zero_grad()
-            gloss.backward()
-            gopt.step()
 
         # record batch stats
         with torch.no_grad():
@@ -374,8 +374,8 @@ def train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, loader, w
                 writer.add_image('generated image', grid_img, epoch)
                 generator.train()
 
-    writer.add_scalar('generator loss', epoch_gloss, epoch)
-    writer.add_scalar('discriminator loss', epoch_dloss, epoch)
+    writer.add_scalar('loss/generator', epoch_gloss, epoch)
+    writer.add_scalar('loss/discriminator', epoch_dloss, epoch)
     torch.save({
             'epoch': epoch,
             'generator_state_dict': generator.state_dict(),

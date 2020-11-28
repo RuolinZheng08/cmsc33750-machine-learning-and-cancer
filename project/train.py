@@ -1,15 +1,17 @@
 from utils import *
 
 def main():
-    if len(sys.argv) < 3:
-        print('python train.py [cvae | cgan | classifier_baseline | classifier_cvae | classifier_cgan] [data_dir]')
+    if len(sys.argv) < 2:
+        print('python train.py [cvae | cgan | classifier_baseline | classifier_cvae | classifier_cgan] [data_dir] [label_file]')
         return
 
     EXPERIMENT = sys.argv[1]
     if 'classifier' in EXPERIMENT:
         DATADIR = sys.argv[2]
+        LABEL_FILE = sys.argv[3]
     else:
         DATADIR = 'tumor_data'
+        LABEL_FILE = 'tumor_train_labels.csv'
 
     print(EXPERIMENT, DATADIR)
 
@@ -18,7 +20,7 @@ def main():
         transforms.CenterCrop(CROP_SIZE),
         transforms.ToTensor()
     ])
-    dataset = TumorDataset(os.path.join(INDIR, 'tumor_train_labels.csv'),
+    dataset = TumorDataset(os.path.join(INDIR, LABEL_FILE),
     os.path.join(INDIR, DATADIR), transform=transform)
     dataloader = DataLoader(dataset=dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
