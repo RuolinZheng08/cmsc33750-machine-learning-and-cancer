@@ -27,10 +27,12 @@ def main():
         for data, labels in test_loader:
             x = data.cuda()
             y = labels.cuda()
-            preds = model(x).squeeze().cpu()
+            preds = model(x).squeeze()
             loss = criterion(preds, y.float())
+            preds = preds.cpu()
             auc = roc_auc_score(labels, preds)
-    print('test AUC', auc)
+    print('test loss {:f}, AUC {:f}'.format(loss.item(), auc))
+    writer.add_scalar('loss/test', loss.item())
     writer.add_scalar('AUC/test', auc)
 
     # confusion matrix

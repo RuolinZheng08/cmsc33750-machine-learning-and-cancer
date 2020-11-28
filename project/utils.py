@@ -34,7 +34,7 @@ IMG_SIZE = 96
 CROP_SIZE = 64
 N_ROW_IMG = 4 # show 4x4 grid of generated img
 
-LABELS = torch.LongTensor(range(N_CLASSES)).repeat_interleave(N_ROW_IMG * N_ROW_IMG).cuda()
+LABELS = torch.LongTensor(range(N_CLASSES)).repeat_interleave(2 * N_ROW_IMG).cuda()
 LABELS_ONEHOT = F.one_hot(LABELS, N_CLASSES)
 
 def imshow(x):
@@ -314,6 +314,7 @@ def train_cvae(epoch, model, opt, loader, writer):
                 data = model.generate(LABELS_ONEHOT.shape[0], LABELS_ONEHOT)
                 grid_img = torchvision.utils.make_grid(data, nrow=N_ROW_IMG, normalize=True)
                 writer.add_image('generated image', grid_img, epoch)
+                model.train()
 
     writer.add_scalar('reconstruction loss', epoch_recons_loss, epoch)
     writer.add_scalar('KL-Divergence loss', epoch_kld_loss, epoch)
@@ -372,6 +373,7 @@ def train_cgan(epoch, generator, discriminator, gopt, dopt, critierion, loader, 
                 data = generator(LABELS.shape[0], LABELS)
                 grid_img = torchvision.utils.make_grid(data, nrow=N_ROW_IMG, normalize=True)
                 writer.add_image('generated image', grid_img, epoch)
+                generator.train()
 
     writer.add_scalar('generator loss', epoch_gloss, epoch)
     writer.add_scalar('discriminator loss', epoch_dloss, epoch)
