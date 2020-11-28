@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -21,15 +22,19 @@ torch.manual_seed(0)
 #torch.set_deterministic(True)
 np.random.seed(0)
 
-INDIR = '../../input/'
+INDIR = '../../input'
 OUTDIR = '../../output'
 N_IN_CHANNELS = 3 # RGB
 N_CLASSES = 2 # binary classification
 N_LATENT = 100
+N_EPOCHS = 100
 BATCH_SIZE = 32
 IMG_SIZE = 96
 CROP_SIZE = 64
 N_ROW_IMG = 4 # show 4x4 grid of generated img
+
+LABELS = torch.LongTensor(range(N_CLASSES)).repeat_interleave(N_ROW_IMG * N_ROW_IMG).cuda()
+LABELS_ONEHOT = F.one_hot(LABELS, N_CLASSES)
 
 def imshow(x):
     img = x.data.cpu().permute(1, 2, 0).numpy()
@@ -256,8 +261,12 @@ def train_classifier(epoch, model, opt, criterion, train_loader, dev_loader, wri
 
         epoch_loss += loss.item()
 
+        break
+
     # end of epoch, eval on dev and record stats
     model.eval()
+    dev_loss = 0
+    dev_preds = []
     with torch.no_grad():
         # a single batch
         for data, labels in dev_loader:
@@ -265,9 +274,11 @@ def train_classifier(epoch, model, opt, criterion, train_loader, dev_loader, wri
             y = labels.cuda()
             preds = model(x).squeeze()
             loss = criterion(preds, y.float())
-            dev_auc = roc_auc_score(labels, preds.cpu())
+            dev_loss += loss.item()
+            dev_preds.append(preds.cpu())
+    dev_auc = roc_auc_score(labels, np.concatenate(dev_preds))
     writer.add_scalars('loss',
-                       {'train': epoch_loss, 'dev': loss.item()},
+                       {'train': epoch_loss, 'dev': dev_loss},
                        epoch)
     writer.add_scalar('AUC/dev', dev_auc, epoch)
     # save model
@@ -311,16 +322,25 @@ def train_cvae(epoch, model, opt, loader, writer):
     writer.add_scalar('reconstruction loss', epoch_recons_loss, epoch)
     writer.add_scalar('KL-Divergence loss', epoch_kld_loss, epoch)
     writer.add_scalar('total loss', epoch_loss, epoch)
+    # save model
+    torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'opt_state_dict': opt.state_dict()
+            },
+        os.path.join(OUTDIR, EXPERIMENT, 'model_{}.pth'.format(epoch)))
     return epoch_kld_loss
 
-def train_cgan(epoch, generator, discriminator, opt, critierion, loader, writer):
+def train_cgan(epoch, generator, discriminator, gopt, dopt, critierion, loader, writer):
     model.train()
     epoch_gloss = 0
     epoch_dloss = 0
     for i, (x, y) in enumerate(loader):
+        batch_size = x.shape[0]
+
         real_x = x.cuda()
         real_y = y.cuda()
-        batch_size = real_x.shape[0]
+
         fake_x = generator(batch_size, real_y).cuda()
         fake_y = torch.LongTensor(torch.randint(0, N_CLASSES, size=(BATCH_SIZE,))).cuda()
 
@@ -359,4 +379,12 @@ def train_cgan(epoch, generator, discriminator, opt, critierion, loader, writer)
 
     writer.add_scalar('generator loss', epoch_gloss, epoch)
     writer.add_scalar('discriminator loss', epoch_dloss, epoch)
+    torch.save({
+            'epoch': epoch,
+            'generator_state_dict': generator.state_dict(),
+            'discriminator_state_dict': discriminator.state_dict(),
+            'gopt_state_dict': gopt.state_dict(),
+            'dopt_state_dict': dopt.state_dict()
+            },
+        os.path.join(OUTDIR, EXPERIMENT, 'model_{}.pth'.format(epoch)))
     return epoch_gloss
