@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from PIL import Image
 
+from tqdm import tqdm
+
 from sklearn.metrics import roc_auc_score, confusion_matrix
 
 import torch
@@ -23,9 +25,11 @@ INDIR = '../../input/'
 OUTDIR = '../../output'
 N_IN_CHANNELS = 3 # RGB
 N_CLASSES = 2 # binary classification
+N_LATENT = 100
 BATCH_SIZE = 32
 IMG_SIZE = 96
 CROP_SIZE = 64
+N_ROW_IMG = 4 # show 4x4 grid of generated img
 
 def imshow(x):
     img = x.data.cpu().permute(1, 2, 0).numpy()
@@ -240,7 +244,7 @@ def create_classifier(n_in_channels, n_channels=16):
 def train_classifier(epoch, model, opt, criterion, train_loader, dev_loader, writer):
     model.train()
     epoch_loss = 0
-    for batch_idx, (data, labels) in enumerate(train_loader):
+    for data, labels in train_loader:
         data = data.cuda()
         labels = labels.cuda()
         preds = model(data)
@@ -274,3 +278,85 @@ def train_classifier(epoch, model, opt, criterion, train_loader, dev_loader, wri
             },
         os.path.join(OUTDIR, EXPERIMENT, 'model_{}.pth'.format(epoch)))
     return dev_auc # save model with best dev auc
+
+def train_cvae(epoch, model, opt, loader, writer):
+    model.train()
+    epoch_recons_loss = 0
+    epoch_kld_loss = 0
+    epoch_loss = 0
+    for i, (x, y) in enumerate(loader):
+        x = x.cuda()
+        # y: one-hot labels
+        y = F.one_hot(y, N_CLASSES).cuda()
+
+        mu, logvar, out = model(x, y)
+        recons_loss, kld_loss, loss = vae_loss(x, out, mu, logvar, beta)
+
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+
+        # record batch stats
+        with torch.no_grad():
+            epoch_recons_loss += recons_loss.item()
+            epoch_kld_loss += kld_loss.item()
+            epoch_loss += loss.item()
+
+            if i == 0: # first batch, generate fakes
+                model.eval()
+                data = vae.generate(LABELS_ONEHOT.shape[0], LABELS_ONEHOT)
+                grid_img = torchvision.utils.make_grid(data, nrow=N_ROW_IMG, normalize=True)
+                writer.add_image('generated image', grid_img, epoch)
+
+    writer.add_scalar('reconstruction loss', epoch_recons_loss, epoch)
+    writer.add_scalar('KL-Divergence loss', epoch_kld_loss, epoch)
+    writer.add_scalar('total loss', epoch_loss, epoch)
+    return epoch_kld_loss
+
+def train_cgan(epoch, generator, discriminator, opt, critierion, loader, writer):
+    model.train()
+    epoch_gloss = 0
+    epoch_dloss = 0
+    for i, (x, y) in enumerate(loader):
+        real_x = x.cuda()
+        real_y = y.cuda()
+        batch_size = real_x.shape[0]
+        fake_x = generator(batch_size, real_y).cuda()
+        fake_y = torch.LongTensor(torch.randint(0, N_CLASSES, size=(BATCH_SIZE,))).cuda()
+
+        disc_labels_real = torch.ones((batch_size,), dtype=torch.float).cuda()
+        disc_labels_fake = torch.zeros((batch_size,), dtype=torch.float).cuda()
+
+        # Train G
+        # tell discriminator these are real data
+        preds_fake = discriminator(fake_x, real_y).squeeze().cuda()
+        gloss = criterion(preds_fake, disc_labels_real)
+        gopt.zero_grad()
+        gloss.backward()
+        gopt.step()
+
+        # Train D to tell if the labeled images are fake
+        # real
+        preds_real = discriminator(real_x, real_y).squeeze().cuda()
+        dloss = criterion(preds_real, disc_labels_real)
+        # fake, detach so grad doesn't go into generator
+        preds_fake = discriminator(fake_x.detach(), fake_y).squeeze().cuda()
+        dloss += criterion(preds_fake, disc_labels_fake)
+        dopt.zero_grad()
+        dloss.backward()
+        dopt.step()
+
+        # record batch stats
+        with torch.no_grad():
+            epoch_gloss += gloss.item()
+            epoch_dloss += dloss.item()
+
+            if i == 0: # first batch, generate fakes
+                generator.eval()
+                data = generator(LABELS.shape[0], LABELS)
+                grid_img = torchvision.utils.make_grid(data, nrow=N_ROW_IMG, normalize=True)
+                writer.add_image('generated image', grid_img, epoch)
+
+    writer.add_scalar('generator loss', epoch_gloss, epoch)
+    writer.add_scalar('discriminator loss', epoch_dloss, epoch)
+    return epoch_gloss
