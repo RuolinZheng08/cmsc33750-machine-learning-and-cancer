@@ -26,8 +26,7 @@ def main():
 
     writer = SummaryWriter(os.path.join(OUTDIR, EXPERIMENT))
 
-    if 'classifier' in EXPERIMENT:
-        print('Train classifier')
+    if EXPERIMENT.startswith('classifier'):
         DEV_SIZE = len(dataset) // 5
         train, dev = random_split(dataset, [len(dataset) - DEV_SIZE, DEV_SIZE],
         generator=torch.Generator().manual_seed(0))
@@ -52,7 +51,7 @@ def main():
                 best_auc = dev_auc
 
     else:
-        if EXPERIMENT == 'cvae':
+        if EXPERIMENT.startswith('cvae'):
             model = ConditionalConvVAE(N_LATENT, N_IN_CHANNELS, N_CLASSES).cuda()
             opt = torch.optim.Adam(model.parameters(), lr=5e-4)
 
@@ -69,7 +68,7 @@ def main():
                         os.path.join(OUTDIR, EXPERIMENT, 'best_model.pth'))
                     best_loss = curr_loss
 
-        elif EXPERIMENT == 'cgan':
+        elif EXPERIMENT.startswith('cgan'):
             generator = ConditionalConvGenerator(N_LATENT, N_IN_CHANNELS, N_CLASSES).cuda()
             gopt = torch.optim.Adam(generator.parameters(), lr=5e-4, betas=(0.5, 0.999))
             discriminator = ConditionalConvDiscriminator(N_LATENT, N_IN_CHANNELS, N_CLASSES, CROP_SIZE).cuda()

@@ -8,7 +8,7 @@ from PIL import Image
 
 from tqdm import tqdm
 
-from sklearn.metrics import roc_auc_score, confusion_matrix
+from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 
 import torch
 import torch.nn as nn
