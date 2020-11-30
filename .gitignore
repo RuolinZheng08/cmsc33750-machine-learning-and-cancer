@@ -1,7 +1,7 @@
 */*data/
 *.tar
 *.h5
-*.csv
+#*.csv
 *.pkl
 *.zip
 *.txt
