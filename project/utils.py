@@ -27,7 +27,7 @@ INDIR = '../../input'
 OUTDIR = '../../output'
 N_IN_CHANNELS = 3 # RGB
 N_CLASSES = 2 # binary classification
-N_LATENT = 100
+N_LATENT = 500
 N_EPOCHS = 100
 BATCH_SIZE = 32
 IMG_SIZE = 96 # raw image size
@@ -170,7 +170,7 @@ class ConditionalConvGenerator(nn.Module):
 
         n_channels = 16 # tuneable hyperparam
         self.n_channels = n_channels
-        self.emb_size = 128
+        self.emb_size = 512
         self.flat_dim = n_channels * 8 * 4 * 4
 
         # to embed noise
@@ -338,9 +338,9 @@ def train_cvae(epoch, model, opt, loader, writer):
         os.path.join(writer.log_dir, 'model_{}.pth'.format(epoch)))
     return epoch_kld_loss
 
-def train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, loader, writer):
+def train_cgan(epoch, generator, discriminator, gopt, dopt, loader, writer, criterion=None):
     """
-    use Wasserstein loss
+    use Wasserstein loss if criterion is None
     """
     epoch_gloss = 0
     epoch_dloss = 0
@@ -349,31 +349,36 @@ def train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, loader, w
 
         real_x = x.cuda()
         real_y = y.cuda()
-
         fake_x = generator(batch_size, real_y).cuda()
         fake_y = torch.LongTensor(torch.randint(0, N_CLASSES, size=(batch_size,))).cuda()
 
-        disc_labels_real = torch.ones((batch_size,), dtype=torch.float).cuda()
-        disc_labels_fake = torch.zeros((batch_size,), dtype=torch.float).cuda()
+        for _ in range(3): # Train D
+            preds_real = discriminator(real_x, real_y).squeeze().cuda()
+            preds_fake = discriminator(fake_x.detach(), fake_y).squeeze().cuda()
+            if criterion:
+                dloss = criterion(preds_real, disc_labels_real)
+                dloss += criterion(preds_fake, disc_labels_fake)
+            else:
+                dloss = -(torch.mean(preds_real) - torch.mean(preds_fake))
+
+            dopt.zero_grad()
+            dloss.backward()
+            dopt.step()
+
+            # clip weights
+            for p in discriminator.parameters():
+                p.data.clamp_(-0.01, 0.01)
 
         # Train G
         # tell discriminator these are real data
         preds_fake = discriminator(fake_x, real_y).squeeze().cuda()
-        gloss = criterion(preds_fake, disc_labels_real)
+        if criterion:
+            gloss = criterion(preds_fake, disc_labels_real)
+        else:
+            gloss = -torch.mean(preds_fake)
         gopt.zero_grad()
         gloss.backward()
         gopt.step()
-
-        # Train D to tell if the labeled images are fake
-        # real
-        preds_real = discriminator(real_x, real_y).squeeze().cuda()
-        dloss = criterion(preds_real, disc_labels_real)
-        # fake, detach so grad doesn't go into generator
-        preds_fake = discriminator(fake_x.detach(), fake_y).squeeze().cuda()
-        dloss += criterion(preds_fake, disc_labels_fake)
-        dopt.zero_grad()
-        dloss.backward()
-        dopt.step()
 
         # record batch stats
         with torch.no_grad():

@@ -70,14 +70,14 @@ def main():
 
         elif EXPERIMENT.startswith('cgan'):
             generator = ConditionalConvGenerator(N_LATENT, N_IN_CHANNELS, N_CLASSES).cuda()
-            gopt = torch.optim.Adam(generator.parameters(), lr=5e-4, betas=(0.5, 0.999))
+            gopt = torch.optim.Adam(generator.parameters(), lr=5e-5, betas=(0.5, 0.999))
             discriminator = ConditionalConvDiscriminator(N_LATENT, N_IN_CHANNELS, N_CLASSES, CROP_SIZE).cuda()
-            dopt = torch.optim.Adam(discriminator.parameters(), lr=5e-4, betas=(0.5, 0.999))
-            criterion = torch.nn.BCEWithLogitsLoss()
+            dopt = torch.optim.Adam(discriminator.parameters(), lr=5e-5, betas=(0.5, 0.999))
+            # criterion = torch.nn.BCEWithLogitsLoss()
 
             best_loss = float('inf')
             for epoch in tqdm(range(N_EPOCHS)):
-                curr_loss = train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, dataloader, writer)
+                curr_loss = train_cgan(epoch, generator, discriminator, gopt, dopt, dataloader, writer)
                 # tqdm.set_description('Generator loss {:f}'.format(curr_loss))
                 if curr_loss < best_loss:
                     torch.save({
