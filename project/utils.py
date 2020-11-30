@@ -76,11 +76,13 @@ class ConditionalConvVAE(nn.Module):
 
         self.encoder = nn.Sequential(
             nn.Conv2d(n_in_channels + n_classes, n_channels, 4, 2, 1),
-            nn.ReLU(),
+            nn.LeakyReLU(0.2),
             nn.Conv2d(n_channels, n_channels * 2, 4, 2, 1),
-            nn.ReLU(),
+            nn.BatchNorm2d(n_channels * 2),
+            nn.LeakyReLU(0.2),
             nn.Conv2d(n_channels * 2, n_channels * 4, 4, 2, 1),
-            nn.ReLU(),
+            nn.BatchNorm2d(n_channels * 4),
+            nn.LeakyReLU(0.2),
             nn.Conv2d(n_channels * 4, n_channels * 8, 4, 2, 1),
             nn.Flatten()
         )
@@ -93,12 +95,15 @@ class ConditionalConvVAE(nn.Module):
 
         self.decoder = nn.Sequential(
             nn.ConvTranspose2d(n_channels * 8, n_channels * 4, 4, 2, 1),
+            nn.BatchNorm2d(n_channels * 4),
             nn.ReLU(),
             nn.ConvTranspose2d(n_channels * 4, n_channels * 2, 4, 2, 1),
+            nn.BatchNorm2d(n_channels * 2),
             nn.ReLU(),
             nn.ConvTranspose2d(n_channels * 2, n_channels, 4, 2, 1),
+            nn.BatchNorm2d(n_channels),
             nn.ReLU(),
-            nn.ConvTranspose2d(n_channels, n_in_channels, 4, 2, 1),
+            nn.ConvTranspose2d(n_channels, n_in_channels, 4, 2, 1)
         )
 
     def encode(self, input):
@@ -173,10 +178,13 @@ class ConditionalConvGenerator(nn.Module):
         self.decoder_fc = nn.Linear(latent_dim + self.emb_size, self.flat_dim)
         self.network = nn.Sequential(
             nn.ConvTranspose2d(n_channels * 8, n_channels * 4, 4, 2, 1),
+            nn.BatchNorm2d(n_channels * 4),
             nn.ReLU(),
             nn.ConvTranspose2d(n_channels * 4, n_channels * 2, 4, 2, 1),
+            nn.BatchNorm2d(n_channels * 2),
             nn.ReLU(),
             nn.ConvTranspose2d(n_channels * 2, n_channels, 4, 2, 1),
+            nn.BatchNorm2d(n_channels),
             nn.ReLU(),
             nn.ConvTranspose2d(n_channels, n_in_channels, 4, 2, 1)
         )
@@ -213,11 +221,13 @@ class ConditionalConvDiscriminator(nn.Module):
         self.network = nn.Sequential(
             # one more channel from label
             nn.Conv2d(n_in_channels + 1, n_channels, 4, 2, 1),
-            nn.ReLU(),
+            nn.LeakyReLU(0.2),
             nn.Conv2d(n_channels, n_channels * 2, 4, 2, 1),
-            nn.ReLU(),
+            nn.BatchNorm2d(n_channels * 2),
+            nn.LeakyReLU(0.2),
             nn.Conv2d(n_channels * 2, n_channels * 4, 4, 2, 1),
-            nn.ReLU(),
+            nn.BatchNorm2d(n_channels * 4),
+            nn.LeakyReLU(0.2),
             nn.Conv2d(n_channels * 4, n_channels * 8, 4, 2, 1),
             nn.Flatten(),
             nn.Linear(self.flat_dim, 1) # scalar output
@@ -329,6 +339,9 @@ def train_cvae(epoch, model, opt, loader, writer):
     return epoch_kld_loss
 
 def train_cgan(epoch, generator, discriminator, gopt, dopt, criterion, loader, writer):
+    """
+    use Wasserstein loss
+    """
     epoch_gloss = 0
     epoch_dloss = 0
     for i, (x, y) in enumerate(loader):
