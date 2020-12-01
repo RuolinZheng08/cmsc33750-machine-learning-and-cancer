@@ -27,7 +27,7 @@ INDIR = '../../input'
 OUTDIR = '../../output'
 N_IN_CHANNELS = 3 # RGB
 N_CLASSES = 2 # binary classification
-N_LATENT = 500
+N_LATENT = 2000
 N_EPOCHS = 100
 BATCH_SIZE = 32
 IMG_SIZE = 96 # raw image size
@@ -71,7 +71,7 @@ class ConditionalConvVAE(nn.Module):
         self.latent_dim = latent_dim
         self.n_classes = n_classes
 
-        n_channels = 16 # tuneable hyperparam
+        n_channels = 64 # tuneable hyperparam
         self.n_channels = n_channels
 
         self.encoder = nn.Sequential(

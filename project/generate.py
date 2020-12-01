@@ -12,10 +12,10 @@ def main():
     # load best model
     best_cache = torch.load(os.path.join(OUTDIR, EXPERIMENT, 'best_model.pth'))
     model = None
-    if EXPERIMENT == 'cvae':
+    if EXPERIMENT.startswith('cvae'):
         model = ConditionalConvVAE(N_LATENT, N_IN_CHANNELS, N_CLASSES).cuda()
         model.load_state_dict(best_cache['model_state_dict'])
-    elif EXPERIMENT == 'cgan': # load generator
+    elif EXPERIMENT.startswith('cgan'): # load generator
         model = ConditionalConvGenerator(N_LATENT, N_IN_CHANNELS, N_CLASSES).cuda()
         model.load_state_dict(best_cache['generator_state_dict'])
     else:
@@ -47,7 +47,7 @@ def main():
         for batch_idx in tqdm(range(num_batches)):
             start = batch_idx * batch_size
             end = start + batch_size
-            if EXPERIMENT == 'cvae': # convert labels to one-hot
+            if EXPERIMENT.startswith('cvae'): # convert labels to one-hot
                 batch_labels = F.one_hot(labels[start : end], N_CLASSES).cuda()
                 data = model.generate(batch_size, batch_labels)
             else:
